@@ -1,5 +1,8 @@
 import urllib2
 from bs4 import BeautifulSoup
+from dateutil import parser as date_parser
+import pytz
+from models import PostModel
 
 
 class ResultsPage(object):
@@ -16,7 +19,7 @@ class ResultsPage(object):
         self.posts = []
         for post in page_soup.find_all('li', class_='blog-post'):
             self.posts.append(Post(post))
-        # TODO: Add Post code.
+            # TODO: Add Post code.
 
 
 class Post(object):
@@ -27,7 +30,17 @@ class Post(object):
         title_tag = post.find('h3', class_='post-title').find('a')
         self.link = title_tag['href']
         self.title = title_tag.string
-        self.timestamp = post.find('a', class_='timestamp-link').find('abbr')['title']
+        self.timestamp = date_parser.parse(post.find('a', class_='timestamp-link').find('abbr')['title']).astimezone(
+            pytz.utc)
         self.tags = []
         for tag in post.find(class_='post-footer').find('span', class_='post-labels').find_all('a', rel='tag'):
             self.tags.append(tag)
+
+    def save_to_db(self):
+        try:
+            PostModel.get(PostModel.link == self.link)
+            return 1
+        except PostModel.DoesNotExist:
+            model = PostModel.create(title=self.title, link=self.link, timestamp=self.timestamp)
+            model.save()
+            return 0
