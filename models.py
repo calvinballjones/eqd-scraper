@@ -6,7 +6,7 @@ db = SqliteDatabase('eqd_posts.db')
 class PostModel(Model):
     title = CharField()
     link = CharField()
-    timestamp = DateTimeField()
+    timestamp = DateTimeField(null=True)
 
     class Meta:
         database = db
